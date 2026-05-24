@@ -3,7 +3,7 @@
  * Todos los métodos lanzan Error si la respuesta no es 2xx.
  */
 
-const API_BASE = '/api';
+const API_BASE = 'http://localhost:8081/api';
 
 async function apiRequest(method, path, body = null) {
     const opts = {
