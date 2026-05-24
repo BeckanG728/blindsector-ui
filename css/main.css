@@ -1,0 +1,191 @@
+/* ============================================================
+   BlindSector — Variables globales y estilos base
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap');
+
+:root {
+    --bg-deep:      #060810;
+    --bg-panel:     #0d1117;
+    --bg-card:      #111827;
+    --border:       #1e2d40;
+    --border-glow:  #1e3a5f;
+
+    --accent:       #00d4ff;
+    --accent-dim:   #007a99;
+    --accent-glow:  rgba(0, 212, 255, 0.15);
+
+    --danger:       #ff3c3c;
+    --danger-dim:   #7a1a1a;
+    --success:      #00ff88;
+    --warning:      #ffa500;
+
+    --text-primary:   #e2e8f0;
+    --text-secondary: #64748b;
+    --text-mono:      #94e2ff;
+
+    --font-display: 'Rajdhani', sans-serif;
+    --font-mono:    'Share Tech Mono', monospace;
+
+    --radius:  4px;
+    --shadow:  0 0 20px rgba(0, 212, 255, 0.08);
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    height: 100%;
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    font-family: var(--font-display);
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+a {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+/* ---- Componentes reutilizables ---- */
+
+.panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    padding: .6rem 1.4rem;
+    font-family: var(--font-display);
+    font-size: .95rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    border: 1px solid var(--accent);
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--accent);
+    cursor: pointer;
+    transition: background .2s, box-shadow .2s;
+}
+
+.btn:hover {
+    background: var(--accent-glow);
+    box-shadow: 0 0 12px rgba(0, 212, 255, 0.3);
+}
+
+.btn:disabled {
+    opacity: .4;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.btn-danger {
+    border-color: var(--danger);
+    color: var(--danger);
+}
+
+.btn-danger:hover {
+    background: rgba(255, 60, 60, 0.1);
+    box-shadow: 0 0 12px rgba(255, 60, 60, 0.25);
+}
+
+.input-field {
+    width: 100%;
+    padding: .6rem .9rem;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: .9rem;
+    outline: none;
+    transition: border-color .2s;
+}
+
+.input-field:focus {
+    border-color: var(--accent-dim);
+    box-shadow: 0 0 8px var(--accent-glow);
+}
+
+.label {
+    display: block;
+    font-size: .75rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: .4rem;
+}
+
+.tag {
+    display: inline-block;
+    padding: .2rem .6rem;
+    border-radius: 2px;
+    font-size: .75rem;
+    font-family: var(--font-mono);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.tag-waiting  { background: rgba(255,165,0,.12); color: var(--warning); border: 1px solid rgba(255,165,0,.3); }
+.tag-active   { background: rgba(0,255,136,.1);  color: var(--success); border: 1px solid rgba(0,255,136,.3); }
+.tag-finished { background: rgba(255,60,60,.1);  color: var(--danger);  border: 1px solid rgba(255,60,60,.3); }
+
+/* ---- Utilidades ---- */
+.text-mono    { font-family: var(--font-mono); color: var(--text-mono); }
+.text-dim     { color: var(--text-secondary); }
+.text-success { color: var(--success); }
+.text-danger  { color: var(--danger); }
+.text-warning { color: var(--warning); }
+.text-accent  { color: var(--accent); }
+.mt-1 { margin-top: .5rem; }
+.mt-2 { margin-top: 1rem; }
+.mt-3 { margin-top: 1.5rem; }
+.hidden { display: none !important; }
+
+/* ---- Scanlines overlay de atmósfera ---- */
+body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,.06) 2px,
+        rgba(0,0,0,.06) 4px
+    );
+    z-index: 9999;
+}
+
+/* ---- Animaciones ---- */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 6px var(--accent-dim); }
+    50%       { box-shadow: 0 0 18px var(--accent); }
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0; }
+}
+
+.animate-in {
+    animation: fadeIn .3s ease both;
+}

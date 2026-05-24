@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlindSector — Partida</title>
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/game.css">
+</head>
+<body>
+
+<!-- ================================================================
+     TOPBAR
+     ================================================================ -->
+<header class="game-topbar">
+    <span class="game-topbar-title">BLIND SECTOR</span>
+    <div class="game-topbar-meta">
+        <span>TURNO <strong id="turn-number">—</strong></span>
+        <span id="status-tag" class="tag tag-active">ACTIVE</span>
+    </div>
+    <button class="btn" id="btn-back-lobby" style="font-size:.75rem; padding:.4rem .9rem;">← Lobby</button>
+</header>
+
+<!-- ================================================================
+     LAYOUT PRINCIPAL
+     ================================================================ -->
+<main class="game-main">
+
+    <!-- Panel izquierdo: estado propio -->
+    <aside class="side-panel">
+
+        <div class="side-card">
+            <div class="side-card-title">Mi Estado</div>
+
+            <div class="hp-bar-wrapper">
+                <div class="hp-label">
+                    <span>HP</span>
+                    <strong id="my-hp">100 HP</strong>
+                </div>
+                <div class="hp-bar">
+                    <div class="hp-fill" id="my-hp-fill" style="width:100%"></div>
+                </div>
+            </div>
+
+            <div class="mt-2">
+                <div class="label">Mi Región</div>
+                <div class="region-display" id="my-region">—</div>
+            </div>
+        </div>
+
+        <div class="side-card">
+            <div class="side-card-title">Último Turno</div>
+            <div class="turn-result">
+                <div class="result-row">
+                    <span class="result-key">Impacto recibido</span>
+                    <span class="result-val" id="hit-on-me">—</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-key">Daño recibido</span>
+                    <span class="result-val" id="dmg-received">—</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-key">Mi impacto</span>
+                    <span class="result-val" id="hit-on-enemy">—</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="side-card">
+            <div class="side-card-title">Log de Turnos</div>
+            <div class="turn-log" id="turn-log"></div>
+        </div>
+
+    </aside>
+
+    <!-- Centro: tablero + controles -->
+    <section class="board-wrapper">
+
+        <div class="board-phase-label">
+            FASE: <span class="phase-text" id="phase-text">SELECCIONAR MOVIMIENTO</span>
+        </div>
+
+        <!-- Tablero 15×15 -->
+        <div id="board"></div>
+
+        <!-- Controles de acción -->
+        <div class="action-controls">
+
+            <div class="action-tabs">
+                <button class="action-tab active" id="tab-move">1. Mover</button>
+                <button class="action-tab" id="tab-attack">2. Atacar</button>
+            </div>
+
+            <p class="action-hint">
+                Haz clic en el tablero para seleccionar destino y objetivo.
+            </p>
+
+            <div class="action-selection-display">
+                <div class="selection-box">
+                    <div class="selection-box-label">Mover a</div>
+                    <div class="selection-box-val" id="move-val">—</div>
+                </div>
+                <div class="selection-box">
+                    <div class="selection-box-label">Atacar en</div>
+                    <div class="selection-box-val" id="attack-val">—</div>
+                </div>
+            </div>
+
+            <div class="submit-row">
+                <button class="btn btn-danger" id="btn-reset">Resetear</button>
+                <button class="btn" id="btn-submit">Enviar Acción</button>
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- Panel derecho: rival -->
+    <aside class="side-panel">
+
+        <div class="side-card">
+            <div class="side-card-title">Rival</div>
+            <div class="mt-1">
+                <div class="label">Región Conocida</div>
+                <div class="region-display" id="enemy-region">—</div>
+            </div>
+            <p class="text-dim mt-2" style="font-size:.75rem; font-family:var(--font-mono)">
+                Solo conoces la región del rival,<br>no sus coordenadas exactas.
+            </p>
+        </div>
+
+        <div class="side-card">
+            <div class="side-card-title">Reglas de Combate</div>
+            <div style="font-size:.75rem; font-family:var(--font-mono); color:var(--text-secondary); line-height:1.7;">
+                <div>· Movimiento: Chebyshev ≤ 4</div>
+                <div>· Área de impacto: 3×3</div>
+                <div>· Daño HIT: 25 HP</div>
+                <div>· Daño DIRECT HIT: 35 HP</div>
+                <div>· Sniper (sin mover): +10 HP</div>
+                <div>· Timeout: 30 s → MISS</div>
+            </div>
+        </div>
+
+    </aside>
+
+</main>
+
+<!-- ================================================================
+     OVERLAY: Esperando rival
+     ================================================================ -->
+<div id="waiting-overlay" class="waiting-overlay hidden">
+    <div class="waiting-spinner"></div>
+    <p class="waiting-text">Esperando al rival...</p>
+</div>
+
+<!-- ================================================================
+     OVERLAY: Fin de partida
+     ================================================================ -->
+<div id="endgame-overlay" class="endgame-overlay hidden">
+    <div class="endgame-result" id="endgame-result">RESULTADO</div>
+    <p class="endgame-subtitle" id="endgame-subtitle"></p>
+    <button class="btn" id="btn-play-again">Volver al Lobby</button>
+</div>
+
+<script type="module" src="/js/game.js"></script>
+
+</body>
+</html>

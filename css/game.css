@@ -1,0 +1,416 @@
+/* ============================================================
+   BlindSector — Estilos de la pantalla de juego (game.html)
+   ============================================================ */
+
+.game-wrapper {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ---- Topbar ---- */
+.game-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: .75rem 1.5rem;
+    background: var(--bg-panel);
+    border-bottom: 1px solid var(--border);
+}
+
+.game-topbar-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: var(--accent);
+}
+
+.game-topbar-meta {
+    display: flex;
+    gap: 1.5rem;
+    font-family: var(--font-mono);
+    font-size: .8rem;
+    color: var(--text-secondary);
+}
+
+.game-topbar-meta span strong {
+    color: var(--text-primary);
+}
+
+/* ---- Layout principal ---- */
+.game-main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 220px 1fr 220px;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+@media (max-width: 900px) {
+    .game-main {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ---- Paneles laterales ---- */
+.side-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.side-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem;
+    font-size: .85rem;
+}
+
+.side-card-title {
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: .75rem;
+    padding-bottom: .4rem;
+    border-bottom: 1px solid var(--border);
+}
+
+/* ---- HP bar ---- */
+.hp-bar-wrapper {
+    margin-top: .5rem;
+}
+
+.hp-label {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--font-mono);
+    font-size: .75rem;
+    color: var(--text-secondary);
+    margin-bottom: .3rem;
+}
+
+.hp-label strong { color: var(--success); }
+
+.hp-bar {
+    height: 8px;
+    background: var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.hp-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--success), #00cc6a);
+    border-radius: 4px;
+    transition: width .5s ease;
+}
+
+.hp-fill.low  { background: linear-gradient(90deg, var(--warning), #cc7700); }
+.hp-fill.crit { background: linear-gradient(90deg, var(--danger), #cc0000); }
+
+/* ---- Región ---- */
+.region-display {
+    font-family: var(--font-mono);
+    font-size: 1.2rem;
+    color: var(--accent);
+    text-align: center;
+    padding: .5rem;
+    border: 1px solid var(--border-glow);
+    border-radius: var(--radius);
+    background: var(--bg-panel);
+    margin-top: .5rem;
+    letter-spacing: .1em;
+}
+
+/* ---- Resultado del último turno ---- */
+.turn-result {
+    margin-top: .5rem;
+}
+
+.result-row {
+    display: flex;
+    justify-content: space-between;
+    padding: .25rem 0;
+    font-family: var(--font-mono);
+    font-size: .78rem;
+    border-bottom: 1px solid rgba(255,255,255,.04);
+}
+
+.result-row:last-child { border-bottom: none; }
+
+.result-key  { color: var(--text-secondary); }
+.result-val  { color: var(--text-mono); }
+
+/* ---- Tablero central ---- */
+.board-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .75rem;
+}
+
+.board-phase-label {
+    font-family: var(--font-mono);
+    font-size: .75rem;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+
+.board-phase-label .phase-text {
+    color: var(--accent);
+    animation: pulse-glow 2s infinite;
+}
+
+#board {
+    display: grid;
+    grid-template-columns: repeat(15, 1fr);
+    gap: 2px;
+    background: var(--bg-panel);
+    padding: 6px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    width: min(100%, 520px);
+    aspect-ratio: 1;
+}
+
+.cell {
+    background: var(--bg-card);
+    border: 1px solid rgba(30,45,64,.8);
+    border-radius: 2px;
+    cursor: pointer;
+    transition: background .12s, border-color .12s;
+    position: relative;
+    aspect-ratio: 1;
+}
+
+.cell:hover {
+    background: rgba(0,212,255,.08);
+    border-color: var(--accent-dim);
+}
+
+/* Estados de celda */
+.cell.player-me {
+    background: rgba(0,212,255,.25);
+    border-color: var(--accent);
+    box-shadow: inset 0 0 6px rgba(0,212,255,.4);
+}
+
+.cell.enemy-region {
+    background: rgba(255,165,0,.1);
+    border-color: rgba(255,165,0,.4);
+}
+
+.cell.my-attack {
+    background: rgba(0,255,136,.15);
+    border-color: rgba(0,255,136,.5);
+}
+
+.cell.impact-received {
+    background: rgba(255,60,60,.2);
+    border-color: rgba(255,60,60,.6);
+}
+
+.cell.selected-move {
+    background: rgba(0,212,255,.35);
+    border-color: var(--accent);
+    animation: pulse-glow 1s infinite;
+}
+
+.cell.selected-attack {
+    background: rgba(255,165,0,.3);
+    border-color: var(--warning);
+}
+
+/* Iconos dentro de las celdas */
+.cell-icon {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .65rem;
+    font-weight: 700;
+    pointer-events: none;
+}
+
+/* ---- Controles de acción ---- */
+.action-controls {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem;
+    width: min(100%, 520px);
+}
+
+.action-tabs {
+    display: flex;
+    gap: .5rem;
+    margin-bottom: 1rem;
+}
+
+.action-tab {
+    flex: 1;
+    padding: .4rem;
+    font-family: var(--font-display);
+    font-size: .75rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all .2s;
+}
+
+.action-tab.active,
+.action-tab:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-glow);
+}
+
+.action-hint {
+    font-family: var(--font-mono);
+    font-size: .75rem;
+    color: var(--text-secondary);
+    text-align: center;
+    margin-bottom: .75rem;
+}
+
+.action-selection-display {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: .75rem;
+}
+
+.selection-box {
+    flex: 1;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: .5rem .75rem;
+    font-family: var(--font-mono);
+    font-size: .78rem;
+}
+
+.selection-box-label {
+    font-size: .65rem;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: var(--text-secondary);
+    margin-bottom: .2rem;
+}
+
+.selection-box-val {
+    color: var(--accent);
+}
+
+.submit-row {
+    display: flex;
+    gap: .75rem;
+}
+
+.submit-row .btn {
+    flex: 1;
+}
+
+/* ---- Overlay de espera ---- */
+.waiting-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(6,8,16,.85);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    backdrop-filter: blur(3px);
+}
+
+.waiting-overlay.hidden { display: none; }
+
+.waiting-spinner {
+    width: 48px;
+    height: 48px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.waiting-text {
+    font-family: var(--font-mono);
+    font-size: .9rem;
+    color: var(--accent);
+    letter-spacing: .12em;
+}
+
+/* ---- Overlay fin de partida ---- */
+.endgame-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(6,8,16,.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    backdrop-filter: blur(4px);
+    animation: fadeIn .4s ease;
+}
+
+.endgame-overlay.hidden { display: none; }
+
+.endgame-result {
+    font-size: 3rem;
+    font-weight: 700;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    margin-bottom: .5rem;
+}
+
+.endgame-result.win  { color: var(--success); text-shadow: 0 0 30px rgba(0,255,136,.5); }
+.endgame-result.loss { color: var(--danger);  text-shadow: 0 0 30px rgba(255,60,60,.5); }
+.endgame-result.draw { color: var(--warning); text-shadow: 0 0 30px rgba(255,165,0,.5); }
+
+.endgame-subtitle {
+    font-family: var(--font-mono);
+    color: var(--text-secondary);
+    font-size: .85rem;
+    margin-bottom: 2rem;
+}
+
+/* ---- Log de turnos ---- */
+.turn-log {
+    max-height: 160px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+}
+
+.log-entry {
+    font-family: var(--font-mono);
+    font-size: .72rem;
+    color: var(--text-secondary);
+    padding: .2rem 0;
+    border-bottom: 1px solid rgba(255,255,255,.03);
+}
+
+.log-entry.hit  { color: var(--danger); }
+.log-entry.miss { color: var(--text-secondary); }
+.log-entry.info { color: var(--accent); }
