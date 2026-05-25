@@ -134,42 +134,52 @@ async function handleSubmit() {
         return;
     }
 
+    // Deshabilitar botón de inmediato para evitar doble envío concurrente
     elBtnSubmit.disabled = true;
 
+    // Obtener turno seguro
+    const currentTurn = (snapshot && (snapshot.turnNumber || snapshot.turn)) ? (snapshot.turnNumber || snapshot.turn) : 1;
+
     try {
-        const result = await submitTurn(
+        logTurn(`Enviando acciones del Turno ${currentTurn}...`, 'info');
+        const res = await submitTurn(
             GAME_ID,
             PLAYER_ID,
-            snapshot?.turn ?? 1,
+            currentTurn,
             selectedMove.col,
             selectedMove.row,
             selectedAttack.col,
             selectedAttack.row
         );
 
-        if (result.waiting) {
-            logTurn('Acción enviada. Esperando al rival...', 'info');
+        if (res.waiting || res.received) {
+            // El rival aún no envía: activamos pantalla de espera y polling
             showWaiting(true);
             startPolling();
         } else {
-            // Turno resuelto directamente en la respuesta
-            snapshot = result;
+            // ¡Ambos enviaron! El turno se resolvió en tiempo real (Jugador 2)
+            snapshot = res;
             updateUI(snapshot);
             showWaiting(false);
             resetSelections();
-
+            
+            // CORRECCIÓN CRÍTICA: Verificar si este último turno provocó el fin de la partida
             if (snapshot.status === 'FINISHED') {
                 showEndgame(snapshot);
             } else {
-                setPhaseUI('move');
+                setPhaseUI('move'); 
+                elBtnSubmit.disabled = false; // Desbloqueo inmediato si la partida continúa
             }
         }
 
     } catch (err) {
         logTurn(`Error al enviar: ${err.message}`, 'hit');
+        resetSelections();
+        setPhaseUI('move');
         elBtnSubmit.disabled = false;
     }
 }
+
 
 // ====================================================================
 // POLLING
