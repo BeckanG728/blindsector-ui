@@ -18,6 +18,8 @@ import { Board } from './board.js';
 const urlParams  = new URLSearchParams(window.location.search);
 const GAME_ID    = urlParams.get('gameId');
 const PLAYER_ID  = urlParams.get('playerId');
+const SPAWN_COL  = parseInt(urlParams.get('spawnCol'), 10);
+const SPAWN_ROW  = parseInt(urlParams.get('spawnRow'), 10);
 
 if (!GAME_ID || !PLAYER_ID) {
     alert('Faltan parámetros gameId / playerId en la URL.');
@@ -68,7 +70,11 @@ async function init() {
         const data = await getLastSnapshot(GAME_ID, PLAYER_ID);
 
         if (data.status === 'WAITING' || data.turn === 0) {
-            // Partida iniciada pero aún sin turno resuelto
+            // Partida iniciada pero aún sin turno resuelto:
+            // renderizar la posición inicial desde los params de la URL
+            if (!isNaN(SPAWN_COL) && !isNaN(SPAWN_ROW)) {
+                board.render({ myCol: SPAWN_COL, myRow: SPAWN_ROW, myHp: 100 });
+            }
             setPhaseUI('move');
             logTurn('Partida iniciada. Esperando...', 'info');
             startPolling();

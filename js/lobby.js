@@ -11,7 +11,9 @@ const state = {
     playerAId: null,
     playerBId: null,
     status:    null,
-    isHost:    false
+    isHost:    false,
+    spawnCol:  null,
+    spawnRow:  null
 };
 
 let pollTimer = null;
@@ -72,7 +74,9 @@ function redirectToGame() {
     stopPolling();
     const params = new URLSearchParams({
         gameId:   state.gameId,
-        playerId: state.playerId
+        playerId: state.playerId,
+        spawnCol: state.spawnCol,
+        spawnRow: state.spawnRow
     });
     window.location.href = `/game.html?${params.toString()}`;
 }
@@ -129,6 +133,8 @@ export function initLobby() {
                 state.playerAId = res.playerAId;
                 state.status    = res.status;
                 state.isHost    = true;
+                state.spawnCol  = res.spawnCol;
+                state.spawnRow  = res.spawnRow;
                 log(`Partida creada: ${res.gameId}`, 'ok');
                 log(`Tu Player ID: ${playerId}`, 'info');
                 showRoomPanel();
@@ -156,6 +162,8 @@ export function initLobby() {
                 state.playerBId = res.playerBId;
                 state.status    = res.status;
                 state.isHost    = false;
+                state.spawnCol  = res.spawnCol;
+                state.spawnRow  = res.spawnRow;
                 log(`Unido a partida: ${res.gameId}`, 'ok');
                 log(`Tu Player ID: ${playerId}`, 'info');
                 showRoomPanel();
