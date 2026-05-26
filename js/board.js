@@ -12,12 +12,13 @@
 const COLS = 15;
 const ROWS = 15;
 
-// Regiones en el tablero (col/row 0..14 → grupos 0..4)
+// Regiones en el tablero (col/row 0..14 → 9 regiones de 5×5, 3 cols × 3 filas)
+// Etiqueta: letra de columna de región (A, B, C) + número de fila de región (1, 2, 3)
+// Alineado con backend: Region.toLabel() → 'A' + regionCol, regionRow + 1
 function getRegion(col, row) {
-    const colSector = Math.floor(col / 3); // 0..4
-    const rowSector = Math.floor(row / 3); // 0..4
-    const letters = ['A', 'B', 'C', 'D', 'E'];
-    return `${letters[rowSector]}${colSector + 1}`;
+    const colSector = Math.floor(col / 5); // 0..2
+    const rowSector = Math.floor(row / 5); // 0..2
+    return `${String.fromCharCode(65 + colSector)}${rowSector + 1}`;
 }
 
 export class Board {
@@ -143,16 +144,15 @@ export class Board {
      */
     _markRegion(region, cssClass) {
         if (!region || region.length < 2) return;
-        const rowLetters = ['A','B','C','D','E'];
-        const rowSector = rowLetters.indexOf(region[0].toUpperCase());
-        const colSector = parseInt(region[1]) - 1;
-        if (rowSector < 0 || colSector < 0 || colSector > 4) return;
+        const colSector = region.charCodeAt(0) - 65; // 'A'=0, 'B'=1, 'C'=2
+        const rowSector = parseInt(region[1]) - 1;   // '1'=0, '2'=1, '3'=2
+        if (colSector < 0 || colSector > 2 || rowSector < 0 || rowSector > 2) return;
 
-        const rowStart = rowSector * 3;
-        const colStart = colSector * 3;
+        const colStart = colSector * 5;
+        const rowStart = rowSector * 5;
 
-        for (let r = rowStart; r < rowStart + 3 && r < ROWS; r++) {
-            for (let c = colStart; c < colStart + 3 && c < COLS; c++) {
+        for (let r = rowStart; r < rowStart + 5 && r < ROWS; r++) {
+            for (let c = colStart; c < colStart + 5 && c < COLS; c++) {
                 const cell = this._cellAt(c, r);
                 if (cell) cell.classList.add(cssClass);
             }
