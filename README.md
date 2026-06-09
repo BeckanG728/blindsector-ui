@@ -23,24 +23,25 @@ BlindSector es un juego táctico para 2 jugadores en el navegador, disputado en 
 
 ## Stack tecnológico
 
-| Capa      | Tecnología                            |
-|-----------|---------------------------------------|
-| Frontend  | HTML + CSS + ES Modules (Vanilla JS)  |
+| Capa      | Tecnología                               |
+|-----------|------------------------------------------|
+| Frontend  | HTML + CSS + ES Modules (Vanilla JS)     |
+| Render 3D | Three.js (vista alternativa `game3d.html`) |
 | Fuentes   | Rajdhani, Share Tech Mono (Google Fonts) |
-| Backend   | API REST externa (ver más abajo)      |
+| Backend   | API REST externa (ver más abajo)         |
 
 ---
 
-## Cómo clonar el proyecto
-
-```bash
-git clone https://github.com/tu-org/blindsector.git
-cd blindsector
-```
+## Cómo ejecutar el proyecto
 
 No se requiere ningún paso de compilación. El frontend es HTML/CSS/JS puro y puede ser servido por cualquier servidor de archivos estáticos.
 
-Para desarrollo local podés usar cualquier servidor liviano, por ejemplo:
+```bash
+git clone https://github.com/tu-org/blindsector-ui.git
+cd blindsector-ui
+```
+
+Para desarrollo local podés usar cualquier servidor liviano:
 
 ```bash
 # Python
@@ -49,63 +50,47 @@ python3 -m http.server 8080
 # Node.js (npx)
 npx serve .
 
-# java web - tomcat
-# crear proyecto desde netbeans u otro IDE
-
 # VS Code
 # Usá la extensión "Live Server"
 ```
 
-Luego abrir `http://localhost:PORT`, el valor de port depende del servicio que se este usando:
-- LiveServer: 5500
-- Tomcat: 8080
+Luego abrir `http://localhost:PORT` según el servicio que estés usando:
+- Live Server: `http://localhost:5500`
+- Python / npx serve: `http://localhost:8080`
 
 ---
 
 ## Enlazar al backend
 
-El frontend se comunica con una API REST. Todas las peticiones se hacen relativas a `/api`, definido en `js/api.js`:
+El frontend se comunica con una API REST. La URL base está definida en `js/api.js`:
 
 ```js
-const API_BASE = '/api';
+const API_BASE = 'http://localhost:8081/api';
 ```
 
-### Opción 1 — Proxy inverso
-
-Configurá tu servidor web (nginx, Caddy, etc.) para redirigir las peticiones de `/api` a tu servicio backend:
-
-```nginx
-# Ejemplo con nginx
-location /api/ {
-    proxy_pass http://localhost:3000/api/;
-}
-```
-
-### Opción 2 — Cambiar `API_BASE` directamente
-
-Si querés apuntar a un backend remoto durante el desarrollo, editá `js/api.js`:
+Cambiá este valor según el entorno:
 
 ```js
-# produccion
+// Producción
 const API_BASE = 'https://tu-backend.com/api';
 
-#local
-const API_BASE = 'https://localhost:8081/api';
+// Local
+const API_BASE = 'http://localhost:8081/api';
 ```
 
 > Asegurate de que el backend tenga CORS habilitado para el origen del frontend si corren en hosts distintos.
 
 ### Endpoints requeridos
 
-| Método | Ruta                               | Descripción                                  |
-|--------|------------------------------------|----------------------------------------------|
-| POST   | `/api/lobby/create`                | Crear una nueva sala                         |
-| POST   | `/api/lobby/join`                  | Unirse a una sala existente por Game ID      |
-| POST   | `/api/lobby/start`                 | El host inicia la partida                    |
+| Método | Ruta                               | Descripción                                    |
+|--------|------------------------------------|------------------------------------------------|
+| POST   | `/api/lobby/create`                | Crear una nueva sala                           |
+| POST   | `/api/lobby/join`                  | Unirse a una sala existente por Game ID        |
+| POST   | `/api/lobby/start`                 | El host inicia la partida                      |
 | GET    | `/api/lobby/{gameId}/status`       | Consultar estado del lobby (jugadores, estado) |
-| GET    | `/api/game/{gameId}/state`         | Consultar snapshot actual del juego          |
-| GET    | `/api/game/{gameId}/snapshot/last` | Reconexión: obtener el último estado conocido |
-| POST   | `/api/turn/submit`                 | Enviar movimiento + ataque del turno         |
+| GET    | `/api/game/{gameId}/state`         | Consultar snapshot actual del juego            |
+| GET    | `/api/game/{gameId}/snapshot/last` | Reconexión: obtener el último estado conocido  |
+| POST   | `/api/turn/submit`                 | Enviar movimiento + ataque del turno           |
 
 Las peticiones de estado del juego requieren el header `X-Player-Id: <playerId>`.
 
@@ -114,39 +99,45 @@ Las peticiones de estado del juego requieren el header `X-Player-Id: <playerId>`
 ## Estructura del proyecto
 
 ```
-blindsector/
+blindsector-ui/
 ├── index.html          # Pantalla del lobby
-├── game.html           # Pantalla de la partida
+├── game3d.html         # Pantalla de la partida (vista 3D con Three.js)
 ├── css/
 │   ├── main.css        # Variables globales, estilos base, componentes reutilizables
 │   ├── lobby.css       # Estilos específicos del lobby
-│   └── game.css        # Estilos de la pantalla de juego
+│   ├── game.css        # Estilos de la pantalla de juego (vista 2D)
+│   └── 3d.css          # Estilos específicos de la vista 3D
 └── js/
     ├── api.js          # Cliente de la API (todas las llamadas fetch al backend)
     ├── board.js        # Renderizado del tablero e interacción con las celdas
     ├── lobby.js        # Estado del lobby y manejadores de formularios
-    └── game.js         # Ciclo de vida del juego, polling, envío de turnos y UI
+    ├── game.js         # Ciclo de vida del juego, polling, envío de turnos y UI
+    └── vfx.js          # Efectos visuales y animaciones
 ```
 
 ### Descripción de archivos principales
 
 **`index.html`** — Punto de entrada del lobby. Contiene los formularios "Crear Partida" y "Unirse a Partida", el panel de estado de sala (Game ID, Player IDs, estado de conexión) y el log de mensajes.
 
-**`game.html`** — Pantalla durante la partida. Renderiza la grilla 15×15, los controles de acción (pestañas mover/atacar), la barra de HP, el log de turnos y los overlays de espera y fin de partida.
+**`game3d.html`** — Pantalla durante la partida. Renderiza la grilla 15×15 con vista 3D (Three.js), los controles de acción (pestañas mover/atacar), la barra de HP, el log de turnos y los overlays de espera y fin de partida.
 
-**`css/main.css`** — Define todas las custom properties CSS (colores, tipografías, espaciado), los componentes reutilizables (`btn`, `input-field`, `tag`, `panel`), animaciones globales y el overlay de atmósfera con scanlines.
+**`css/main.css`** — Define todas las custom properties CSS (colores, tipografías, espaciado), los componentes reutilizables (`btn`, `input-field`, `tag`, `panel`), animaciones globales y el overlay de atmósfera con scanlines. Paleta principal: fondo `#060810`, acento `#00d4ff`, tipografías Rajdhani y Share Tech Mono.
 
 **`css/lobby.css`** — Estilos del layout del lobby, cards de sala, indicador de espera animado y el panel de log.
 
 **`css/game.css`** — Estilos para la topbar del juego, paneles laterales, estados de la barra de HP, grilla del tablero, estados de celda (`player-me`, `enemy-region`, `selected-move`, `selected-attack`, etc.) y ambos overlays.
 
+**`css/3d.css`** — Estilos específicos para la vista 3D: canvas de Three.js, overlays de HUD y ajustes de layout para la pantalla de partida 3D.
+
 **`js/api.js`** — Wrapper liviano sobre `fetch`. Expone funciones async nombradas para cada endpoint del backend. Lanza un error en respuestas no 2xx, incluyendo el mensaje de error del servidor cuando está disponible.
 
 **`js/board.js`** — Clase `Board` responsable de construir la grilla de 15×15 celdas, mapear los clics a coordenadas `(col, row)`, calcular las etiquetas de región (`A1`–`E5`) y aplicar clases CSS para reflejar el estado del juego (posición actual, región enemiga, áreas de ataque, selecciones activas).
 
-**`js/lobby.js`** — Maneja los formularios del lobby (crear/unirse/iniciar), administra el estado local del lobby, ejecuta el ciclo de polling cada 2 segundos esperando que el jugador B se conecte o que el host inicie la partida, y redirige a `game.html` con `gameId` y `playerId` como parámetros de URL.
+**`js/lobby.js`** — Maneja los formularios del lobby (crear/unirse/iniciar), administra el estado local del lobby, ejecuta el ciclo de polling cada 2 segundos esperando que el jugador B se conecte o que el host inicie la partida, y redirige a `game3d.html` con `gameId` y `playerId` como parámetros de URL.
 
 **`js/game.js`** — Orquesta el ciclo de vida completo de la partida: reconexión vía `getLastSnapshot`, el flujo mover → atacar → enviar turno, polling para obtener el snapshot resuelto mientras se espera al rival, actualización de la UI (HP, región, log de turnos) y renderizado del overlay de fin de partida.
+
+**`js/vfx.js`** — Efectos visuales y animaciones de la pantalla de juego: explosiones, flashes de impacto, partículas y transiciones de estado.
 
 ---
 

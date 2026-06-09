@@ -78,7 +78,7 @@ function redirectToGame() {
         spawnCol: state.spawnCol,
         spawnRow: state.spawnRow
     });
-    window.location.href = `/game.html?${params.toString()}`;
+    window.location.href = `/game3d.html?${params.toString()}`;
 }
 
 // ---- Polling del lobby ----
@@ -180,7 +180,7 @@ export function initLobby() {
             try {
                 const res = await startGame(state.gameId);
                 state.status = res.status;
-                log(`Partida iniciada — Turno ${res.turnNumber}`, 'ok');
+                log(`Partida iniciada — Turno ${res.turnNumber ?? 1}`, 'ok');
                 redirectToGame();
             } catch (err) {
                 log(`Error al iniciar: ${err.message}`, 'error');

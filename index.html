@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,101 +8,99 @@
     <link rel="stylesheet" href="/css/main.css">
     <link rel="stylesheet" href="/css/lobby.css">
 </head>
+
 <body>
 
-<div class="lobby-wrapper">
+    <div class="lobby-wrapper">
 
-    <!-- Header -->
-    <header class="lobby-header">
-        <h1 class="lobby-title">BLIND SECTOR</h1>
-        <p class="lobby-subtitle">tactical blind-fire · 15×15 grid · 2 players</p>
-    </header>
+        <!-- Header -->
+        <header class="lobby-header">
+            <h1 class="lobby-title">BLIND SECTOR</h1>
+            <p class="lobby-subtitle">tactical blind-fire · 15×15 grid · 2 players</p>
+            <p class="lobby-version">v 1.0.0</p>
+        </header>
 
-    <!-- Cards de acción -->
-    <div class="lobby-grid">
+        <!-- Cards de acción -->
+        <div class="lobby-grid">
 
-        <!-- Crear partida -->
-        <div class="lobby-card animate-in" style="animation-delay:.05s">
-            <h2 class="lobby-card-title">Crear Partida</h2>
-            <p class="text-dim" style="font-size:.8rem; font-family:var(--font-mono); margin-bottom:1rem;">
-                Se generará un Player ID único para ti automáticamente.
-            </p>
-            <form id="form-create" novalidate>
-                <button class="btn" type="submit" style="width:100%">Crear Partida</button>
-            </form>
-        </div>
-
-        <!-- Unirse a partida -->
-        <div class="lobby-card animate-in" style="animation-delay:.1s">
-            <h2 class="lobby-card-title">Unirse a Partida</h2>
-            <form id="form-join" novalidate>
-                <div class="form-group">
-                    <label class="label" for="join-game-id">Game ID</label>
-                    <input
-                            class="input-field"
-                            id="join-game-id"
-                            type="text"
-                            placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                            autocomplete="off"
-                            required>
-                </div>
-                <p class="text-dim mt-1" style="font-size:.78rem; font-family:var(--font-mono);">
-                    Tu Player ID se generará automáticamente.
+            <!-- Crear partida -->
+            <div class="lobby-card animate-in" style="animation-delay:.05s">
+                <h2 class="lobby-card-title">Crear Partida</h2>
+                <p class="text-dim" style="font-size:.8rem; font-family:var(--font-mono); margin-bottom:1rem;">
+                    Se generará un Player ID único para ti automáticamente.
                 </p>
-                <button class="btn" type="submit" style="width:100%; margin-top:.75rem;">Unirse</button>
-            </form>
+                <form id="form-create" novalidate>
+                    <button class="btn" type="submit" style="width:100%">Crear Partida</button>
+                </form>
+            </div>
+
+            <!-- Unirse a partida -->
+            <div class="lobby-card animate-in" style="animation-delay:.1s">
+                <h2 class="lobby-card-title">Unirse a Partida</h2>
+                <form id="form-join" novalidate>
+                    <div class="form-group">
+                        <label class="label" for="join-game-id">Game ID</label>
+                        <input class="input-field" id="join-game-id" type="text"
+                            placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" autocomplete="off" required>
+                    </div>
+                    <p class="text-dim mt-1" style="font-size:.78rem; font-family:var(--font-mono);">
+                        Tu Player ID se generará automáticamente.
+                    </p>
+                    <button class="btn" type="submit" style="width:100%; margin-top:.75rem;">Unirse</button>
+                </form>
+            </div>
+
         </div>
 
-    </div>
+        <!-- Panel de sala activa -->
+        <div id="room-status" class="room-status hidden animate-in">
+            <div class="room-status-inner">
 
-    <!-- Panel de sala activa -->
-    <div id="room-status" class="room-status hidden animate-in">
-        <div class="room-status-inner">
-
-            <div class="room-info-row">
-                <span class="room-info-key">GAME ID</span>
-                <span class="room-info-val text-mono" id="room-game-id">—</span>
-            </div>
-            <div class="room-info-row">
-                <span class="room-info-key">MI PLAYER ID</span>
-                <span class="room-info-val text-mono" id="room-my-player-id">—</span>
-            </div>
-            <div class="room-info-row">
-                <span class="room-info-key">JUGADOR A</span>
-                <span class="room-info-val text-mono" id="room-player-a">—</span>
-            </div>
-            <div class="room-info-row">
-                <span class="room-info-key">JUGADOR B</span>
-                <span class="room-info-val text-mono" id="room-player-b">
-                    <span class="waiting-indicator">
-                        <span class="waiting-dot"></span>
-                        esperando...
+                <div class="room-info-row">
+                    <span class="room-info-key">GAME ID</span>
+                    <span class="room-info-val text-mono" id="room-game-id">—</span>
+                </div>
+                <div class="room-info-row">
+                    <span class="room-info-key">MI PLAYER ID</span>
+                    <span class="room-info-val text-mono" id="room-my-player-id">—</span>
+                </div>
+                <div class="room-info-row">
+                    <span class="room-info-key">JUGADOR A</span>
+                    <span class="room-info-val text-mono" id="room-player-a">—</span>
+                </div>
+                <div class="room-info-row">
+                    <span class="room-info-key">JUGADOR B</span>
+                    <span class="room-info-val text-mono" id="room-player-b">
+                        <span class="waiting-indicator">
+                            <span class="waiting-dot"></span>
+                            esperando...
+                        </span>
                     </span>
-                </span>
-            </div>
-            <div class="room-info-row">
-                <span class="room-info-key">ESTADO</span>
-                <span class="tag tag-waiting" id="room-status-tag">WAITING</span>
-            </div>
+                </div>
+                <div class="room-info-row">
+                    <span class="room-info-key">ESTADO</span>
+                    <span class="tag tag-waiting" id="room-status-tag">WAITING</span>
+                </div>
 
-            <div class="room-actions">
-                <button class="btn" id="btn-copy-id">Copiar Game ID</button>
-                <button class="btn hidden" id="btn-start">Iniciar Partida</button>
-            </div>
+                <div class="room-actions">
+                    <button class="btn" id="btn-copy-id">Copiar Game ID</button>
+                    <button class="btn hidden" id="btn-start">Iniciar Partida</button>
+                </div>
 
+            </div>
         </div>
+
+        <!-- Log -->
+        <div id="lobby-log" class="mt-2"></div>
+
     </div>
 
-    <!-- Log -->
-    <div id="lobby-log" class="mt-2"></div>
-
-</div>
-
-<script type="module" src="/js/lobby.js"></script>
-<script type="module">
-    import { initLobby } from '/js/lobby.js';
-    initLobby();
-</script>
+    <script type="module" src="/js/lobby.js"></script>
+    <script type="module">
+        import { initLobby } from '/js/lobby.js';
+        initLobby();
+    </script>
 
 </body>
+
 </html>

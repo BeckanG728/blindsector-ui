@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BlindSector — Partida 3D</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap"
+    rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="stylesheet" href="/css/3d.css">
+</head>
+
+<body>
+  <div id="app">
+
+    <!-- TOPBAR -->
+    <header id="topbar">
+      <div style="display:flex;align-items:center;gap:.6rem">
+        <span class="title glitch-anim">BLIND SECTOR</span><span class="app-version">v_1.0.0</span>
+      </div>
+      <div class="topbar-meta">
+        <span>TURNO <strong id="ui-turn">—</strong></span>
+        <span id="ui-status-tag" class="tag tag-wait">WAITING</span>
+      </div>
+      <button class="btn btn-sm" id="btn-lobby">&#8592; Lobby</button>
+    </header>
+
+    <!-- LEFT PANEL -->
+    <aside id="left-panel">
+      <div class="card">
+        <div class="card-title">Mi Estado</div>
+        <div class="hp-wrap">
+          <div class="hp-label"><span>HP</span><strong id="ui-my-hp">100 HP</strong></div>
+          <div class="hp-bar">
+            <div class="hp-fill" id="ui-my-hp-fill" style="width:100%"></div>
+          </div>
+        </div>
+        <div style="margin-top:8px">
+          <div class="card-title" style="margin-bottom:4px;border:none;padding:0">Mi Región</div>
+          <div class="region-box" id="ui-my-region">—</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Último Turno</div>
+        <div class="result-row"><span class="rk">Impacto recibido</span><span class="rv" id="ui-hit-on-me">—</span>
+        </div>
+        <div class="result-row"><span class="rk">Daño recibido</span><span class="rv" id="ui-dmg-recv">—</span></div>
+        <div class="result-row"><span class="rk">Mi impacto</span><span class="rv" id="ui-hit-on-enemy">—</span></div>
+      </div>
+      <div class="card" style="flex:1">
+        <div class="card-title">Log de Turnos</div>
+        <div class="turn-log" id="ui-log"></div>
+      </div>
+    </aside>
+
+    <!-- CENTER: THREE.JS CANVAS -->
+    <section id="center">
+      <canvas id="canvas3d"></canvas>
+      <!-- HUD info -->
+      <div id="hud3d">
+        <div class="hud-item">CAM: <span id="hud-cam">ORBITAL</span></div>
+        <div class="hud-item">FASE: <span id="hud-phase">MOVER</span></div>
+      </div>
+      <div id="cell-hover-info"></div>
+      <!-- Waiting overlay -->
+      <div id="overlay-wait" class="overlay hidden">
+        <div class="spinner"></div>
+        <p class="wait-txt">Esperando al rival...</p>
+      </div>
+      <!-- Endgame overlay -->
+      <div id="overlay-end" class="overlay hidden">
+        <div class="end-result" id="end-result">RESULTADO</div>
+        <p class="end-sub" id="end-sub"></p>
+        <button class="btn" id="btn-play-again">Volver al Lobby</button>
+      </div>
+    </section>
+
+    <!-- RIGHT PANEL -->
+    <aside id="right-panel">
+      <div class="card">
+        <div class="card-title">Rival</div>
+        <div style="margin-top:4px">
+          <div class="card-title" style="margin-bottom:4px;border:none;padding:0">Región Conocida</div>
+          <div class="region-box" id="ui-enemy-region">—</div>
+        </div>
+        <p style="font-size:.67rem;font-family:var(--font-mono);color:var(--muted);margin-top:8px;line-height:1.6">Solo
+          conoces la región del rival, no sus coordenadas exactas.</p>
+      </div>
+      <div class="card">
+        <div class="card-title">Reglas de Combate</div>
+        <div style="font-size:.67rem;font-family:var(--font-mono);color:var(--muted);line-height:1.8">
+          <div>· Movimiento: Chebyshev ≤ 4</div>
+          <div>· Área de impacto: 3×3</div>
+          <div>· Daño HIT: 25 HP</div>
+          <div>· Daño DIRECT HIT: 35 HP</div>
+          <div>· Sniper (sin mover): +10 HP</div>
+          <div>· Timeout: 30 s → MISS</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Cámara 3D</div>
+        <div style="font-size:.67rem;font-family:var(--font-mono);color:var(--muted);line-height:1.8">
+          <div>· Arrastrar — orbitar</div>
+          <div>· Rueda — zoom</div>
+          <div>· Clic en celda — seleccionar</div>
+          <button class="btn btn-sm" id="btn-reset-cam" style="width:100%;margin-top:8px">Reset Cam</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- BOTTOM BAR -->
+    <footer id="bottombar">
+      <div class="phase-label">FASE: <span id="ui-phase-txt">MOVIMIENTO</span></div>
+      <div class="sel-boxes">
+        <div class="sel-box">
+          <div class="sel-box-lbl">Mover a</div>
+          <div class="sel-box-val" id="ui-move-val">—</div>
+        </div>
+        <div class="sel-box">
+          <div class="sel-box-lbl">Atacar en</div>
+          <div class="sel-box-val" id="ui-atk-val">—</div>
+        </div>
+      </div>
+      <div class="btns">
+        <button class="btn btn-danger btn-sm" id="btn-reset">Resetear</button>
+        <button class="btn btn-sm" id="btn-submit">Enviar Acción</button>
+      </div>
+    </footer>
+
+  </div>
+
+  <script>
+    // ══════════════════════════════════════════════════════
+    // CONFIG
+    // ══════════════════════════════════════════════════════
+    const API_BASE = 'http://localhost:8081/api';
+    const COLS = 15, ROWS = 15, STEP = 1.1;
+    const OFF = ((COLS - 1) * STEP) / 2;
+    const POLL_MS = 2000;
+
+    // URL params
+    const urlParams = new URLSearchParams(window.location.search);
+    const GAME_ID = urlParams.get('gameId');
+    const PLAYER_ID = urlParams.get('playerId');
+    const SPAWN_COL = parseInt(urlParams.get('spawnCol'), 10);
+    const SPAWN_ROW = parseInt(urlParams.get('spawnRow'), 10);
+
+    // ══════════════════════════════════════════════════════
+    // GAME STATE
+    // ══════════════════════════════════════════════════════
+    let snapshot = null;
+    let phase = 'move';
+    let selectedMove = null;
+    let selectedAttack = null;
+    let pollTimer = null;
+    let prevHp = 100;
+
+    // ══════════════════════════════════════════════════════
+    // THREE.JS SETUP
+    // ══════════════════════════════════════════════════════
+    const canvas = document.getElementById('canvas3d');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.setClearColor(0x060810, 1);
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x060810, 0.018);
+
+    const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 300);
+    camera.position.set(0, 22, 24);
+    camera.lookAt(0, 0, 0);
+
+    function resizeRenderer() {
+      const w = canvas.clientWidth, h = canvas.clientHeight;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+    resizeRenderer();
+    new ResizeObserver(resizeRenderer).observe(canvas);
+
+    // Lighting
+    const ambient = new THREE.AmbientLight(0x1a2535, 2.5);
+    scene.add(ambient);
+    const sun = new THREE.DirectionalLight(0x4488cc, 1.2);
+    sun.position.set(8, 20, 10);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.camera.near = 0.5;
+    sun.shadow.camera.far = 100;
+    sun.shadow.camera.left = -20;
+    sun.shadow.camera.right = 20;
+    sun.shadow.camera.top = 20;
+    sun.shadow.camera.bottom = -20;
+    scene.add(sun);
+    const rim = new THREE.DirectionalLight(0x002244, 0.5);
+    rim.position.set(-10, 8, -8);
+    scene.add(rim);
+
+    const ptMe = new THREE.PointLight(0x00d4ff, 3, 10);
+    scene.add(ptMe);
+    const ptEnemy = new THREE.PointLight(0xff3c3c, 3, 10);
+    scene.add(ptEnemy);
+    const ptBoom = new THREE.PointLight(0xff8800, 0, 12);
+    scene.add(ptBoom);
+
+    // ══════════════════════════════════════════════════════
+    // GRID / CELLS
+    // ══════════════════════════════════════════════════════
+    const cellMeshes = [];
+    const cellGeo = new THREE.BoxGeometry(1, 0.1, 1);
+
+    const CELL_COLORS = {
+      default: { color: 0x0d1a28, emissive: 0x000000, emissiveInt: 0, height: 0 },
+      hover: { color: 0x0a2a38, emissive: 0x003344, emissiveInt: .4, height: .04 },
+      playerMe: { color: 0x003344, emissive: 0x001a2a, emissiveInt: .6, height: .08 },
+      reachable: { color: 0x002233, emissive: 0x004466, emissiveInt: .25, height: .03 },
+      enemyRegion: { color: 0x2a1500, emissive: 0x110800, emissiveInt: .4, height: .04 },
+      selectedMove: { color: 0x004466, emissive: 0x00d4ff, emissiveInt: .7, height: .12 },
+      selectedAtk: { color: 0x442200, emissive: 0xffa500, emissiveInt: .7, height: .12 },
+      myAttack: { color: 0x003311, emissive: 0x00ff88, emissiveInt: .3, height: .05 },
+      impactRecv: { color: 0x550000, emissive: 0xff2200, emissiveInt: .8, height: .14 },
+    };
+
+    function worldPos(c, r) {
+      return new THREE.Vector3(c * STEP - OFF, 0, r * STEP - OFF);
+    }
+
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const mat = new THREE.MeshStandardMaterial({ color: 0x0d1a28, roughness: .8, metalness: .2 });
+        const m = new THREE.Mesh(cellGeo, mat);
+        const pos = worldPos(c, r);
+        m.position.set(pos.x, 0, pos.z);
+        m.receiveShadow = true;
+        m.userData = { c, r, state: 'default' };
+        scene.add(m);
+        cellMeshes.push(m);
+      }
+    }
+
+    const grid = new THREE.GridHelper(COLS * STEP, COLS, 0x1e3040, 0x0d1a28);
+    grid.position.y = 0.056;
+    scene.add(grid);
+
+    const floor = new THREE.Mesh(
+      new THREE.PlaneGeometry(COLS * STEP + 4, ROWS * STEP + 4),
+      new THREE.MeshStandardMaterial({ color: 0x06101a, roughness: 1 })
+    );
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = -.01;
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    function cellAt(c, r) { return cellMeshes[r * COLS + c]; }
+
+    function setCellState(c, r, state) {
+      const m = cellAt(c, r);
+      if (!m) return;
+      const cfg = CELL_COLORS[state] || CELL_COLORS.default;
+      m.material.color.setHex(cfg.color);
+      m.material.emissive = new THREE.Color(cfg.emissive);
+      m.material.emissiveIntensity = cfg.emissiveInt;
+      m.position.y = cfg.height;
+      m.userData.state = state;
+    }
+
+    function resetAllCells() {
+      for (let r = 0; r < ROWS; r++)
+        for (let c = 0; c < COLS; c++)
+          setCellState(c, r, 'default');
+    }
+
+    function getRegion(c, r) {
+      return String.fromCharCode(65 + Math.floor(c / 5)) + (Math.floor(r / 5) + 1);
+    }
+
+    function markRegion(regionStr, state) {
+      if (!regionStr || regionStr.length < 2) return;
+      const cs = regionStr.charCodeAt(0) - 65;
+      const rs = parseInt(regionStr[1]) - 1;
+      if (cs < 0 || cs > 2 || rs < 0 || rs > 2) return;
+      for (let r = rs * 5; r < rs * 5 + 5 && r < ROWS; r++)
+        for (let c = cs * 5; c < cs * 5 + 5 && c < COLS; c++)
+          setCellState(c, r, state);
+    }
+
+    /** Marca con 'reachable' todas las celdas alcanzables en Chebyshev ≤ 4 desde (originC, originR),
+     *  excluyendo la celda de origen (que ya tiene estado 'playerMe'). */
+    function markReachable(originC, originR) {
+      const MOVE_RANGE = 4;
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          if (c === originC && r === originR) continue;
+          const chebyshev = Math.max(Math.abs(c - originC), Math.abs(r - originR));
+          if (chebyshev <= MOVE_RANGE) setCellState(c, r, 'reachable');
+        }
+      }
+    }
+
+    // ══════════════════════════════════════════════════════
+    // CHARACTER MODELS
+    // ══════════════════════════════════════════════════════
+    function makePlayer(isEnemy) {
+      const g = new THREE.Group();
+      const BC = isEnemy ? 0x8b1a1a : 0x0a3a4a;
+      const AC = isEnemy ? 0xcc2222 : 0x007a99;
+      const HC = isEnemy ? 0x991111 : 0x005577;
+      const SK = 0xa07850;
+
+      const add = (geo, color, x, y, z, rough = .7, metal = .2) => {
+        const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: metal }));
+        m.position.set(x, y, z);
+        m.castShadow = m.receiveShadow = true;
+        g.add(m); return m;
+      };
+      const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
+
+      add(box(.38, .42, .22), BC, 0, .72, 0);
+      add(box(.36, .3, .06), AC, 0, .75, .14, .5, .5);
+      add(box(.28, .28, .26), SK, 0, 1.09, 0, .8, 0);
+      add(box(.32, .18, .30), HC, 0, 1.19, 0, .5, .5);
+      add(box(.38, .04, .36), HC, 0, 1.09, 0, .5, .5);
+      add(box(.06, .05, .02), 0x111111, -.07, 1.09, .14);
+      add(box(.06, .05, .02), 0x111111, .07, 1.09, .14);
+      add(box(.16, .42, .18), BC, -.1, .28, 0);
+      add(box(.16, .42, .18), BC, .1, .28, 0);
+      add(box(.18, .12, .22), 0x222222, -.1, .06, .02, .9, .2);
+      add(box(.18, .12, .22), 0x222222, .1, .06, .02, .9, .2);
+      add(box(.12, .36, .14), BC, -.27, .68, 0);
+      add(box(.12, .36, .14), BC, .27, .68, 0);
+      add(box(.13, .1, .12), 0x1a1a1a, -.27, .48, 0);
+      add(box(.13, .1, .12), 0x1a1a1a, .27, .48, 0);
+
+      if (isEnemy) {
+        add(box(.06, .06, .55), 0x333333, .22, .78, .2, .6, .6);
+        add(box(.06, .12, .18), 0x553311, .22, .7, -.12, .8, .1);
+      } else {
+        add(box(.05, .05, .38), 0x444444, -.22, .78, .15, .5, .7);
+      }
+      return g;
+    }
+
+    function makeMortar() {
+      const g = new THREE.Group();
+      const mat = (c, r = .7, me = .5) => new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: me });
+      const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
+      const cyl = (rt, rb, h, s = 8) => new THREE.CylinderGeometry(rt, rb, h, s);
+
+      const addM = (geo, m, x, y, z) => {
+        const mesh = new THREE.Mesh(geo, m);
+        mesh.position.set(x, y, z);
+        mesh.castShadow = mesh.receiveShadow = true;
+        g.add(mesh); return mesh;
+      };
+
+      addM(box(.55, .06, .55), mat(0x2a2a2a), 0, .03, 0);
+      const bL = new THREE.Mesh(cyl(.025, .025, .45), mat(0x3a3a3a));
+      bL.position.set(-.14, .26, 0); bL.rotation.z = .35; g.add(bL);
+      const bR = bL.clone(); bR.position.set(.14, .26, 0); bR.rotation.z = -.35; g.add(bR);
+      const barrel = new THREE.Mesh(cyl(.065, .075, .7, 12), mat(0x555555, .5, .7));
+      barrel.position.set(0, .48, .08); barrel.rotation.x = -.55; g.add(barrel);
+      return g;
+    }
+
+    function makeShell() {
+      const g = new THREE.Group();
+      const m1 = new THREE.Mesh(new THREE.CylinderGeometry(.04, .04, .18, 8),
+        new THREE.MeshStandardMaterial({ color: 0xcc8800, roughness: .4, metalness: .8, emissive: 0x441100, emissiveIntensity: .8 }));
+      const m2 = new THREE.Mesh(new THREE.ConeGeometry(.04, .09, 8),
+        new THREE.MeshStandardMaterial({ color: 0xaa6600, roughness: .4, metalness: .8 }));
+      m2.position.y = .135;
+      const f1 = new THREE.Mesh(new THREE.BoxGeometry(.02, .1, .08),
+        new THREE.MeshStandardMaterial({ color: 0xcc8800, roughness: .5, metalness: .7 }));
+      f1.position.y = -.08;
+      const f2 = f1.clone(); f2.rotation.y = Math.PI / 2;
+      g.add(m1); g.add(m2); g.add(f1); g.add(f2);
+      return g;
+    }
+
+    // Place characters
+    const myGroup = new THREE.Group();
+    const myChar = makePlayer(false);
+    const myMortar = makeMortar();
+    myMortar.position.set(.5, 0, -.1);
+    myMortar.scale.setScalar(.85);
+    myGroup.add(myChar);
+    myGroup.add(myMortar);
+
+    // El enemigo NO se agrega a la escena: su posición exacta es información oculta.
+    // Solo usamos enePos3D internamente para dirigir el mortero y la luz de región.
+    scene.add(myGroup);
+
+    let myPos3D = { c: isNaN(SPAWN_COL) ? 2 : SPAWN_COL, r: isNaN(SPAWN_ROW) ? 12 : SPAWN_ROW };
+    // enePos3D guarda el centro de la región conocida del rival (actualizado en updateUI).
+    // Nunca contiene coordenadas reales — solo sirve para orientar el mortero y la ptEnemy.
+    let enePos3D = { c: 7, r: 7 };  // centro del tablero como valor inicial neutro
+
+    function placeCharacter(group, c, r, lookC, lookR, animate = false) {
+      const target = worldPos(c, r);
+      const lookAt = worldPos(lookC, lookR);
+      const dy = Math.atan2(lookAt.x - target.x, lookAt.z - target.z);
+      if (animate) {
+        group.userData.targetX = target.x;
+        group.userData.targetZ = target.z;
+        group.userData.targetRY = dy;
+        group.userData.moving = true;
+      } else {
+        group.position.set(target.x, 0, target.z);
+        group.rotation.y = dy;
+      }
+    }
+
+    /** Devuelve la celda central de una región (ej: "B2" → col 7, row 6) */
+    function regionCenter(regionStr) {
+      if (!regionStr || regionStr.length < 2) return { c: 7, r: 7 };
+      const cs = regionStr.charCodeAt(0) - 65;
+      const rs = parseInt(regionStr[1]) - 1;
+      if (cs < 0 || cs > 2 || rs < 0 || rs > 2) return { c: 7, r: 7 };
+      return { c: cs * 5 + 2, r: rs * 5 + 2 };
+    }
+
+    placeCharacter(myGroup, myPos3D.c, myPos3D.r, enePos3D.c, enePos3D.r);
+
+    // ══════════════════════════════════════════════════════
+    // PARTICLES & FX
+    // ══════════════════════════════════════════════════════
+    let activeParticles = [];
+    let activeShells = [];
+    let enemyStagger = 0;
+    let myStagger = 0;
+
+    function spawnExplosion(pos, color1 = 0xff4400, color2 = 0xffaa00) {
+      for (let i = 0; i < 20; i++) {
+        const size = .04 + Math.random() * .1;
+        const m = new THREE.Mesh(
+          new THREE.BoxGeometry(size, size, size),
+          new THREE.MeshStandardMaterial({
+            color: i % 2 === 0 ? color1 : color2,
+            emissive: color1, emissiveIntensity: 1, roughness: .4
+          })
+        );
+        m.position.copy(pos);
+        const v = new THREE.Vector3((Math.random() - .5) * 7, (Math.random() * .5 + .3) * 6, (Math.random() - .5) * 7);
+        m.userData = { vel: v, life: 1.0, type: 'exp' };
+        scene.add(m);
+        activeParticles.push(m);
+      }
+      ptBoom.position.copy(pos);
+      ptBoom.position.y = 1.5;
+      ptBoom.intensity = 10;
+      setTimeout(() => ptBoom.intensity = 0, 400);
+    }
+
+    function fireMortarShell(fromC, fromR, toC, toR, onLand) {
+      const shell = makeShell();
+      const sp = worldPos(fromC, fromR).clone(); sp.y = 1.4;
+      const ep = worldPos(toC, toR).clone(); ep.y = .2;
+      const cp = new THREE.Vector3((sp.x + ep.x) / 2, 9 + Math.random() * 3, (sp.z + ep.z) / 2);
+      shell.position.copy(sp);
+      scene.add(shell);
+      activeShells.push({ mesh: shell, t: 0, sp, ep, cp, onLand });
+    }
+
+    // ══════════════════════════════════════════════════════
+    // ORBIT CAMERA
+    // ══════════════════════════════════════════════════════
+    let camTheta = Math.PI / 5, camPhi = Math.PI / 3.2, camRadius = 28;
+    let tTheta = camTheta, tPhi = camPhi, tRadius = camRadius;
+    let isDragging = false, lastMx = 0, lastMy = 0;
+
+    canvas.addEventListener('mousedown', e => { isDragging = true; lastMx = e.clientX; lastMy = e.clientY; });
+    window.addEventListener('mouseup', () => isDragging = false);
+    window.addEventListener('mousemove', e => {
+      if (!isDragging) return;
+      tTheta -= (e.clientX - lastMx) * .007;
+      tPhi = Math.max(.15, Math.min(Math.PI / 2.05, tPhi - (e.clientY - lastMy) * .005));
+      lastMx = e.clientX; lastMy = e.clientY;
+    });
+    canvas.addEventListener('wheel', e => {
+      tRadius = Math.max(12, Math.min(42, tRadius + e.deltaY * .04));
+      e.preventDefault();
+    }, { passive: false });
+    function resetCam() { tTheta = Math.PI / 5; tPhi = Math.PI / 3.2; tRadius = 28; }
+    document.getElementById('btn-reset-cam').addEventListener('click', resetCam);
+
+    // ══════════════════════════════════════════════════════
+    // RAYCASTING — CELL CLICKS
+    // ══════════════════════════════════════════════════════
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    let hoveredCell = null;
+    const hoverInfo = document.getElementById('cell-hover-info');
+
+    canvas.addEventListener('mousemove', e => {
+      if (isDragging) { hoverInfo.style.opacity = '0'; return; }
+      const rect = canvas.getBoundingClientRect();
+      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      const hits = raycaster.intersectObjects(cellMeshes);
+      if (hoveredCell) {
+        const prevState = hoveredCell.userData.state;
+        if (prevState === 'hover') {
+          // Restaurar al estado correcto: reachable si estaba en rango, sino default
+          const { c, r } = hoveredCell.userData;
+          const inRange = snapshot && snapshot.myCol != null && phase === 'move' && !selectedMove &&
+            Math.max(Math.abs(c - snapshot.myCol), Math.abs(r - snapshot.myRow)) <= 4;
+          setCellState(c, r, inRange ? 'reachable' : 'default');
+        }
+        hoveredCell = null;
+      }
+      if (hits.length > 0) {
+        const hit = hits[0].object;
+        const { c, r } = hit.userData;
+        if (hit.userData.state === 'default' || hit.userData.state === 'reachable') {
+          if (hit.userData.state !== 'reachable') setCellState(c, r, 'hover');
+          hoveredCell = hit;
+        }
+        hoverInfo.textContent = `${getRegion(c, r)} (${c}, ${r})`;
+        hoverInfo.style.opacity = '1';
+      } else {
+        hoverInfo.style.opacity = '0';
+      }
+    });
+
+    canvas.addEventListener('click', e => {
+      if (isDragging) return;
+      const rect = canvas.getBoundingClientRect();
+      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      const hits = raycaster.intersectObjects(cellMeshes);
+      if (hits.length === 0) return;
+      const { c, r } = hits[0].object.userData;
+      handleCellClick(c, r);
+    });
+
+    // ══════════════════════════════════════════════════════
+    // GAME LOGIC
+    // ══════════════════════════════════════════════════════
+    function handleCellClick(c, r) {
+      if (snapshot && snapshot.status === 'FINISHED') return;
+      const waitEl = document.getElementById('overlay-wait');
+      if (!waitEl.classList.contains('hidden')) return;
+
+      if (phase === 'move') {
+        selectedMove = { c, r };
+        setPhase('attack');
+        renderBoardState();
+        uiSet('ui-move-val', `(${c}, ${r})`);
+      } else {
+        selectedAttack = { c, r };
+        renderBoardState();
+        uiSet('ui-atk-val', `(${c}, ${r})`);
+      }
+    }
+
+    function renderBoardState() {
+      resetAllCells();
+      if (!snapshot) return;
+      const { myCol, myRow, enemyRegion, myAttackArea, impactAreaReceived } = snapshot;
+
+      // Mostrar rango de movimiento (Chebyshev ≤ 4) antes de que el jugador elija destino
+      if (myCol != null && myRow != null && phase === 'move' && !selectedMove) {
+        markReachable(myCol, myRow);
+      }
+
+      if (myCol != null && myRow != null) setCellState(myCol, myRow, 'playerMe');
+      if (enemyRegion) markRegion(enemyRegion, 'enemyRegion');
+      if (myAttackArea) myAttackArea.forEach(p => { if (!(p.col === myCol && p.row === myRow)) setCellState(p.col, p.row, 'myAttack'); });
+      if (impactAreaReceived) impactAreaReceived.forEach(p => setCellState(p.col, p.row, 'impactRecv'));
+      if (selectedMove) setCellState(selectedMove.c, selectedMove.r, 'selectedMove');
+      if (selectedAttack) setCellState(selectedAttack.c, selectedAttack.r, 'selectedAtk');
+      if (myCol != null) { const mp = worldPos(myCol, myRow); ptMe.position.set(mp.x, 2, mp.z); }
+    }
+
+    function setPhase(newPhase) {
+      phase = newPhase;
+      const txt = phase === 'move' ? 'MOVIMIENTO' : 'ATAQUE';
+      uiSet('ui-phase-txt', txt);
+      document.getElementById('hud-phase').textContent = txt;
+    }
+
+    // ── UI helpers ──
+    function uiSet(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
+
+    function uiLog(msg, type = '') {
+      const log = document.getElementById('ui-log');
+      if (!log) return;
+      const e = document.createElement('div');
+      e.className = `log-entry ${type}`;
+      e.textContent = `> ${msg}`;
+      log.prepend(e);
+    }
+
+    function setStatusTag(status) {
+      const el = document.getElementById('ui-status-tag');
+      if (!el) return;
+      el.textContent = status || '—';
+      el.className = 'tag';
+      if (status === 'WAITING') el.classList.add('tag-wait');
+      if (status === 'ACTIVE') el.classList.add('tag-active');
+      if (status === 'FINISHED') el.classList.add('tag-fin');
+    }
+
+    function updateHp(fillEl, labelEl, hp) {
+      if (!fillEl) return;
+      fillEl.style.width = `${Math.max(0, hp)}%`;
+      fillEl.className = 'hp-fill';
+      if (hp <= 25) fillEl.classList.add('crit');
+      else if (hp <= 50) fillEl.classList.add('low');
+      if (labelEl) { labelEl.textContent = `${hp} HP`; labelEl.style.color = hp <= 25 ? 'var(--red)' : hp <= 50 ? 'var(--orange)' : 'var(--green)'; }
+    }
+
+    function screenFlash(color) {
+      const f = document.createElement('div');
+      Object.assign(f.style, { position: 'fixed', inset: 0, background: color, pointerEvents: 'none', zIndex: '9997', opacity: '1', transition: 'opacity .5s ease-out' });
+      document.body.appendChild(f);
+      requestAnimationFrame(() => requestAnimationFrame(() => { f.style.opacity = '0'; }));
+      setTimeout(() => f.remove(), 600);
+    }
+
+    // ── Update UI from snapshot ──
+    function updateUI(snap, withVfx = false) {
+      if (!snap) return;
+      uiSet('ui-turn', snap.turn ?? '—');
+      setStatusTag(snap.status);
+
+      const hp = snap.myHp ?? 100;
+      const hpFill = document.getElementById('ui-my-hp-fill');
+      const hpLbl = document.getElementById('ui-my-hp');
+      if (withVfx && hp < prevHp) {
+        hpFill.style.filter = 'brightness(2)';
+        setTimeout(() => { hpFill.style.filter = ''; updateHp(hpFill, hpLbl, hp); }, 150);
+        screenFlash('rgba(255,60,60,.2)');
+        myStagger = .5;
+      } else {
+        updateHp(hpFill, hpLbl, hp);
+      }
+      prevHp = hp;
+
+      uiSet('ui-my-region', snap.myRegion || '—');
+      uiSet('ui-enemy-region', snap.enemyRegion || '—');
+      uiSet('ui-hit-on-me', snap.hitOnMe ?? '—');
+      uiSet('ui-dmg-recv', snap.damageReceived != null ? `-${snap.damageReceived} HP` : '—');
+      uiSet('ui-hit-on-enemy', snap.hitOnEnemy ?? '—');
+
+      if (snap.myCol != null) {
+        const newC = snap.myCol, newR = snap.myRow;
+        if (newC !== myPos3D.c || newR !== myPos3D.r) {
+          myPos3D = { c: newC, r: newR };
+          placeCharacter(myGroup, newC, newR, enePos3D.c, enePos3D.r, true);
+        }
+        const mp = worldPos(newC, newR); ptMe.position.set(mp.x, 2, mp.z);
+      }
+
+      // Actualizar enePos3D al centro de la región conocida del rival
+      if (snap.enemyRegion) {
+        enePos3D = regionCenter(snap.enemyRegion);
+      }
+
+      renderBoardState();
+
+      if (withVfx) {
+        if (snap.hitOnMe && snap.hitOnMe !== 'MISS') uiLog(`T${snap.turn}: Recibiste ${snap.hitOnMe} — ${snap.damageReceived} HP`, 'hit');
+        else if (snap.hitOnMe === 'MISS') uiLog(`T${snap.turn}: El rival falló.`, 'miss');
+        if (snap.impactAreaReceived && snap.hitOnMe !== 'MISS') {
+          const center = snap.impactAreaReceived[Math.floor(snap.impactAreaReceived.length / 2)];
+          if (center) { const pos = worldPos(center.col, center.row); pos.y = .5; spawnExplosion(pos, 0xff2200, 0xff6600); myStagger = .6; }
+        }
+        if (snap.hitOnEnemy && snap.hitOnEnemy !== 'MISS') {
+          screenFlash('rgba(0,255,136,.15)');
+          uiLog(`T${snap.turn}: Tu ataque — ${snap.hitOnEnemy}`, 'ok');
+          // Explosion at enemy position
+          const ep = worldPos(enePos3D.c, enePos3D.r); ep.y = .5;
+          spawnExplosion(ep, 0xff4400, 0xffaa00);
+          enemyStagger = .6;
+        }
+      }
+    }
+
+    // ── Overlays ──
+    function showWaiting(v) { document.getElementById('overlay-wait').classList.toggle('hidden', !v); }
+
+    function showEndgame(snap) {
+      document.getElementById('overlay-end').classList.remove('hidden');
+      let txt, cls, sub;
+      if (snap.winnerId === 'draw') { txt = 'EMPATE'; cls = 'draw'; sub = 'Ningún jugador sobrevivió.'; }
+      else if (snap.winnerId === PLAYER_ID) { txt = '¡VICTORIA!'; cls = 'win'; sub = 'Eliminaste a tu rival.'; screenFlash('rgba(0,255,136,.25)'); }
+      else { txt = 'DERROTA'; cls = 'loss'; sub = `Ganó: ${snap.winnerId}`; screenFlash('rgba(255,60,60,.25)'); }
+      const er = document.getElementById('end-result');
+      er.textContent = txt; er.className = `end-result ${cls}`;
+      document.getElementById('end-sub').textContent = sub;
+    }
+
+    // ══════════════════════════════════════════════════════
+    // API
+    // ══════════════════════════════════════════════════════
+    async function apiRequest(method, path, body = null) {
+      const opts = { method, headers: { 'Content-Type': 'application/json' } };
+      if (body) opts.body = JSON.stringify(body);
+      const res = await fetch(API_BASE + path, opts);
+      if (!res.ok) { let msg = `HTTP ${res.status}`; try { const e = await res.json(); msg = e.message || msg; } catch (_) { } throw new Error(msg); }
+      return res.json();
+    }
+    async function apiPollState() {
+      const res = await fetch(`${API_BASE}/game/${GAME_ID}/state`, { headers: { 'X-Player-Id': PLAYER_ID } });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    }
+    async function apiLastSnapshot() {
+      const res = await fetch(`${API_BASE}/game/${GAME_ID}/snapshot/last`, { headers: { 'X-Player-Id': PLAYER_ID } });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    }
+    async function apiSubmitTurn(turn, mc, mr, ac, ar) {
+      return apiRequest('POST', '/turn/submit', { gameId: GAME_ID, playerId: PLAYER_ID, turn, moveToCol: mc, moveToRow: mr, attackCol: ac, attackRow: ar });
+    }
+
+    // ══════════════════════════════════════════════════════
+    // POLLING
+    // ══════════════════════════════════════════════════════
+    function startPolling() { stopPolling(); pollTimer = setInterval(doPoll, POLL_MS); }
+    function stopPolling() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } }
+
+    async function doPoll() {
+      try {
+        const data = await apiPollState();
+        if (data.waiting) return;
+        stopPolling();
+        snapshot = data;
+        updateUI(snapshot, true);
+        showWaiting(false);
+        resetSelections();
+        document.getElementById('btn-submit').disabled = false;
+        if (snapshot.status === 'FINISHED') showEndgame(snapshot);
+        else { setPhase('move'); uiLog(`Turno ${(snapshot.turn || 2) - 1} resuelto.`, 'info'); }
+      } catch (e) { console.warn('Poll:', e.message); }
+    }
+
+    // ══════════════════════════════════════════════════════
+    // SUBMIT
+    // ══════════════════════════════════════════════════════
+    async function handleSubmit() {
+      if (!selectedMove || !selectedAttack) { uiLog('Selecciona movimiento Y ataque primero.', 'hit'); return; }
+      const btn = document.getElementById('btn-submit');
+      btn.disabled = true;
+      const turn = snapshot ? (snapshot.turnNumber || snapshot.turn || 1) : 1;
+      const { c: mc, r: mr } = selectedMove;
+      const { c: ac, r: ar } = selectedAttack;
+
+      uiLog(`T${turn}: Enviando acción...`, 'info');
+
+      // Lanzar el shell y la petición API en paralelo.
+      // El overlay de espera solo aparece cuando AMBOS terminen:
+      // el shell aterrizó (onLand) Y la API respondió.
+      let shellLanded = false;
+      let apiResult = null;   // { res } o { err }
+
+      function tryShowWaiting() {
+        if (!shellLanded || !apiResult) return;  // esperar al más lento
+        if (apiResult.err) {
+          uiLog(`Error: ${apiResult.err.message}`, 'hit');
+          screenFlash('rgba(255,60,60,.18)');
+          resetSelections(); setPhase('move'); btn.disabled = false;
+          return;
+        }
+        const res = apiResult.res;
+        if (res.waiting || res.received) {
+          showWaiting(true);
+          startPolling();
+        } else {
+          snapshot = res;
+          updateUI(snapshot, true);
+          showWaiting(false);
+          resetSelections();
+          if (snapshot.status === 'FINISHED') showEndgame(snapshot);
+          else { setPhase('move'); btn.disabled = false; }
+        }
+      }
+
+      // 1. Disparar el mortero — onLand se llama cuando el proyectil aterriza
+      fireMortarShell(myPos3D.c, myPos3D.r, ac, ar, () => {
+        shellLanded = true;
+        tryShowWaiting();
+      });
+
+      // 2. Enviar acción al servidor en paralelo (no bloqueamos el shell)
+      try {
+        const res = await apiSubmitTurn(turn, mc, mr, ac, ar);
+        apiResult = { res };
+      } catch (e) {
+        apiResult = { err: e };
+      }
+      tryShowWaiting();
+    }
+
+    function resetSelections() {
+      selectedMove = selectedAttack = null;
+      uiSet('ui-move-val', '—'); uiSet('ui-atk-val', '—');
+      renderBoardState();
+    }
+
+    // ══════════════════════════════════════════════════════
+    // INIT
+    // ══════════════════════════════════════════════════════
+    async function init() {
+      if (!GAME_ID || !PLAYER_ID) {
+        // Demo mode
+        const demoCol = isNaN(SPAWN_COL) ? 2 : SPAWN_COL;
+        const demoRow = isNaN(SPAWN_ROW) ? 12 : SPAWN_ROW;
+        snapshot = { myCol: demoCol, myRow: demoRow, myHp: 100, turn: 1, status: 'ACTIVE', myRegion: getRegion(demoCol, demoRow), enemyRegion: 'C1' };
+        myPos3D = { c: demoCol, r: demoRow };
+        placeCharacter(myGroup, demoCol, demoRow, enePos3D.c, enePos3D.r);
+        const mp = worldPos(demoCol, demoRow); ptMe.position.set(mp.x, 2, mp.z);
+        updateUI(snapshot, false); setPhase('move');
+        uiLog('Modo demo — sin servidor activo.', 'info');
+        return;
+      }
+      try {
+        const data = await apiLastSnapshot();
+        if (data.status === 'WAITING' || data.turn === 0) {
+          if (!isNaN(SPAWN_COL) && !isNaN(SPAWN_ROW)) {
+            snapshot = { myCol: SPAWN_COL, myRow: SPAWN_ROW, myHp: 100, status: 'WAITING', turn: 0 };
+            placeCharacter(myGroup, SPAWN_COL, SPAWN_ROW, enePos3D.c, enePos3D.r);
+            myPos3D = { c: SPAWN_COL, r: SPAWN_ROW };
+            const mp = worldPos(SPAWN_COL, SPAWN_ROW);
+            ptMe.position.set(mp.x, 2, mp.z);
+            renderBoardState();
+            uiSet('ui-my-region', getRegion(SPAWN_COL, SPAWN_ROW));
+          }
+          setPhase('move'); uiLog('Partida iniciada. Esperando al rival...', 'info'); startPolling(); return;
+        }
+        snapshot = data; prevHp = snapshot.myHp ?? 100;
+        updateUI(snapshot, false);
+        if (snapshot.status === 'FINISHED') { showEndgame(snapshot); return; }
+        setPhase('move');
+      } catch (e) {
+        uiLog(`Error de conexión: ${e.message}`, 'hit');
+        const demoCol = isNaN(SPAWN_COL) ? 2 : SPAWN_COL;
+        const demoRow = isNaN(SPAWN_ROW) ? 12 : SPAWN_ROW;
+        snapshot = { myCol: demoCol, myRow: demoRow, myHp: 100, turn: 1, status: 'ACTIVE', myRegion: getRegion(demoCol, demoRow), enemyRegion: 'C1' };
+        myPos3D = { c: demoCol, r: demoRow };
+        placeCharacter(myGroup, demoCol, demoRow, enePos3D.c, enePos3D.r);
+        const mp2 = worldPos(demoCol, demoRow); ptMe.position.set(mp2.x, 2, mp2.z);
+        updateUI(snapshot, false); setPhase('move');
+        uiLog('Modo demo activo.', 'info');
+      }
+    }
+
+    // ══════════════════════════════════════════════════════
+    // EVENTS
+    // ══════════════════════════════════════════════════════
+    document.getElementById('btn-submit').addEventListener('click', handleSubmit);
+    document.getElementById('btn-reset').addEventListener('click', () => { resetSelections(); setPhase('move'); renderBoardState(); });
+    document.getElementById('btn-lobby').addEventListener('click', () => window.location.href = '/index.html');
+    document.getElementById('btn-play-again').addEventListener('click', () => window.location.href = '/index.html');
+
+    // ══════════════════════════════════════════════════════
+    // ANIMATION LOOP
+    // ══════════════════════════════════════════════════════
+    const clock = new THREE.Clock();
+    let t = 0;
+
+    function lerp(a, b, f) { return a + (b - a) * f; }
+    function quadBezier(p0, p1c, p2, t) {
+      const x = lerp(lerp(p0.x, p1c.x, t), lerp(p1c.x, p2.x, t), t);
+      const y = lerp(lerp(p0.y, p1c.y, t), lerp(p1c.y, p2.y, t), t);
+      const z = lerp(lerp(p0.z, p1c.z, t), lerp(p1c.z, p2.z, t), t);
+      return new THREE.Vector3(x, y, z);
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = clock.getDelta(); t += dt;
+
+      // Camera
+      camTheta += (tTheta - camTheta) * .08; camPhi += (tPhi - camPhi) * .08; camRadius += (tRadius - camRadius) * .08;
+      camera.position.x = camRadius * Math.sin(camPhi) * Math.sin(camTheta);
+      camera.position.y = camRadius * Math.cos(camPhi);
+      camera.position.z = camRadius * Math.sin(camPhi) * Math.cos(camTheta);
+      camera.lookAt(0, 1, 0);
+
+      // Bob
+      if (!myGroup.userData.moving) myGroup.position.y = Math.sin(t * 1.8) * .012;
+
+      // Smooth move
+      if (myGroup.userData.moving) {
+        myGroup.position.x = lerp(myGroup.position.x, myGroup.userData.targetX, .07);
+        myGroup.position.z = lerp(myGroup.position.z, myGroup.userData.targetZ, .07);
+        myGroup.rotation.y = lerp(myGroup.rotation.y, myGroup.userData.targetRY, .07);
+        if (Math.abs(myGroup.position.x - myGroup.userData.targetX) < .01) myGroup.userData.moving = false;
+      }
+
+      // Stagger
+      if (myStagger > 0) {
+        myStagger -= dt;
+        myGroup.position.x += (Math.random() - .5) * .04;
+        myGroup.position.z += (Math.random() - .5) * .04;
+        myGroup.rotation.z = Math.sin(myStagger * 25) * .1;
+      } else { myGroup.rotation.z *= .85; }
+
+      if (enemyStagger > 0) {
+        enemyStagger -= dt;
+        // Sin modelo visible: solo decaer el contador para la explosión VFX
+      } else {
+        enemyStagger = 0;
+      }
+
+      // Mortar facing: apunta al centro de la región conocida del rival
+      if (!myGroup.userData.moving) {
+        const from = worldPos(myPos3D.c, myPos3D.r);
+        const to = worldPos(enePos3D.c, enePos3D.r);
+        myGroup.rotation.y = lerp(myGroup.rotation.y, Math.atan2(to.x - from.x, to.z - from.z), .04);
+      }
+
+      // Lights
+      ptMe.intensity = 2.5 + Math.sin(t * 2.1) * .5;
+      ptEnemy.intensity = 2.5 + Math.sin(t * 1.7) * .5;
+      const epL = worldPos(enePos3D.c, enePos3D.r); ptEnemy.position.set(epL.x, 2, epL.z);
+
+      // Animated selection glow
+      if (selectedMove) { const m = cellAt(selectedMove.c, selectedMove.r); if (m) m.material.emissiveIntensity = .5 + Math.sin(t * 4) * .3; }
+      if (selectedAttack) { const m = cellAt(selectedAttack.c, selectedAttack.r); if (m) m.material.emissiveIntensity = .5 + Math.sin(t * 4 + 1) * .3; }
+
+      // Shells
+      activeShells = activeShells.filter(s => {
+        s.t += dt * .8;
+        if (s.t >= 1) {
+          scene.remove(s.mesh);
+          const hit = snapshot && snapshot.hitOnEnemy && snapshot.hitOnEnemy !== 'MISS';
+          spawnExplosion(s.ep.clone(), hit ? 0xff2200 : 0x224466, hit ? 0xff8800 : 0x336688);
+          if (s.onLand) s.onLand(s.ep);
+          return false;
+        }
+        const pos = quadBezier(s.sp, s.cp, s.ep, s.t);
+        const posN = quadBezier(s.sp, s.cp, s.ep, Math.min(s.t + .01, 1));
+        s.mesh.position.copy(pos);
+        const dir = posN.clone().sub(pos).normalize();
+        if (dir.length() > 0) s.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+        return true;
+      });
+
+      // Particles
+      activeParticles = activeParticles.filter(p => {
+        p.userData.life -= dt * 1.8;
+        if (p.userData.life <= 0) { scene.remove(p); return false; }
+        p.userData.vel.y -= dt * 12;
+        p.position.addScaledVector(p.userData.vel, dt);
+        p.material.opacity = p.userData.life;
+        p.material.transparent = true;
+        p.scale.setScalar(p.userData.life * .8 + .2);
+        p.rotation.x += dt * 3; p.rotation.z += dt * 2;
+        return true;
+      });
+
+      renderer.render(scene, camera);
+    }
+
+    animate();
+    init();
+  </script>
+</body>
+
+</html>
