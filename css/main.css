@@ -77,12 +77,33 @@ a {
     background: transparent;
     color: var(--accent);
     cursor: pointer;
-    transition: background .2s, box-shadow .2s;
+    transition: background .2s, box-shadow .2s, transform .15s;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(0,212,255,.18) 50%, transparent 100%);
+    transform: translateX(-100%);
+    transition: transform .35s ease;
+}
+
+.btn:hover::after {
+    transform: translateX(100%);
 }
 
 .btn:hover {
     background: var(--accent-glow);
-    box-shadow: 0 0 12px rgba(0, 212, 255, 0.3);
+    box-shadow: 0 0 16px rgba(0, 212, 255, 0.35), 0 0 4px rgba(0,212,255,.6) inset;
+    transform: translateY(-1px);
+}
+
+.btn:active {
+    transform: translateY(1px);
+    box-shadow: 0 0 6px rgba(0, 212, 255, 0.2);
 }
 
 .btn:disabled {
@@ -96,9 +117,13 @@ a {
     color: var(--danger);
 }
 
+.btn-danger::after {
+    background: linear-gradient(90deg, transparent 0%, rgba(255,60,60,.18) 50%, transparent 100%);
+}
+
 .btn-danger:hover {
     background: rgba(255, 60, 60, 0.1);
-    box-shadow: 0 0 12px rgba(255, 60, 60, 0.25);
+    box-shadow: 0 0 16px rgba(255, 60, 60, 0.3), 0 0 4px rgba(255,60,60,.4) inset;
 }
 
 .input-field {
@@ -111,12 +136,12 @@ a {
     font-family: var(--font-mono);
     font-size: .9rem;
     outline: none;
-    transition: border-color .2s;
+    transition: border-color .25s, box-shadow .25s;
 }
 
 .input-field:focus {
     border-color: var(--accent-dim);
-    box-shadow: 0 0 8px var(--accent-glow);
+    box-shadow: 0 0 12px var(--accent-glow), 0 0 0 1px var(--accent-dim);
 }
 
 .label {
@@ -138,8 +163,8 @@ a {
     text-transform: uppercase;
 }
 
-.tag-waiting  { background: rgba(255,165,0,.12); color: var(--warning); border: 1px solid rgba(255,165,0,.3); }
-.tag-active   { background: rgba(0,255,136,.1);  color: var(--success); border: 1px solid rgba(0,255,136,.3); }
+.tag-waiting  { background: rgba(255,165,0,.12); color: var(--warning); border: 1px solid rgba(255,165,0,.3); animation: tag-pulse-warning 2s ease-in-out infinite; }
+.tag-active   { background: rgba(0,255,136,.1);  color: var(--success); border: 1px solid rgba(0,255,136,.3); animation: tag-pulse-success 2s ease-in-out infinite; }
 .tag-finished { background: rgba(255,60,60,.1);  color: var(--danger);  border: 1px solid rgba(255,60,60,.3); }
 
 /* ---- Utilidades ---- */
@@ -170,22 +195,168 @@ body::after {
     z-index: 9999;
 }
 
-/* ---- Animaciones ---- */
+/* ---- Vignette ambiental ---- */
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.55) 100%);
+    z-index: 9998;
+}
+
+/* ============================================================
+   ANIMACIONES
+   ============================================================ */
+
+/* Entrada suave con subida */
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(8px); }
+    from { opacity: 0; transform: translateY(12px); }
     to   { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes pulse-glow {
-    0%, 100% { box-shadow: 0 0 6px var(--accent-dim); }
-    50%       { box-shadow: 0 0 18px var(--accent); }
+/* Entrada desde arriba (topbar) */
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
+/* Entrada desde la izquierda */
+@keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-24px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+/* Entrada desde la derecha */
+@keyframes slideInRight {
+    from { opacity: 0; transform: translateX(24px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+/* Escala suave de aparición */
+@keyframes scaleIn {
+    from { opacity: 0; transform: scale(.92); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+/* Pulso de glow acento */
+@keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 6px var(--accent-dim); }
+    50%       { box-shadow: 0 0 22px var(--accent), 0 0 40px rgba(0,212,255,.25); }
+}
+
+/* Pulso de glow en texto */
+@keyframes pulse-glow-text {
+    0%, 100% { text-shadow: 0 0 8px rgba(0,212,255,.4); }
+    50%       { text-shadow: 0 0 20px rgba(0,212,255,.9), 0 0 40px rgba(0,212,255,.4); }
+}
+
+/* Blink cursor */
 @keyframes blink {
     0%, 100% { opacity: 1; }
     50%       { opacity: 0; }
 }
 
-.animate-in {
-    animation: fadeIn .3s ease both;
+/* Spin simple */
+@keyframes spin {
+    to { transform: rotate(360deg); }
 }
+
+/* Spin inverso */
+@keyframes spin-reverse {
+    to { transform: rotate(-360deg); }
+}
+
+/* Glitch horizontal */
+@keyframes glitch {
+    0%, 90%, 100% {
+        clip-path: none;
+        transform: translate(0);
+    }
+    91% {
+        clip-path: polygon(0 20%, 100% 20%, 100% 35%, 0 35%);
+        transform: translate(-3px, 0);
+        color: var(--danger);
+    }
+    93% {
+        clip-path: polygon(0 55%, 100% 55%, 100% 70%, 0 70%);
+        transform: translate(3px, 0);
+        color: var(--accent);
+    }
+    95% {
+        clip-path: polygon(0 10%, 100% 10%, 100% 25%, 0 25%);
+        transform: translate(-2px, 0);
+        color: var(--success);
+    }
+    97% {
+        clip-path: none;
+        transform: translate(0);
+        color: var(--accent);
+    }
+}
+
+/* Flash de impacto */
+@keyframes impact-flash {
+    0%   { background: rgba(255,60,60,.7); box-shadow: inset 0 0 12px rgba(255,60,60,.9); }
+    40%  { background: rgba(255,60,60,.3); }
+    100% { background: rgba(255,60,60,.2); box-shadow: inset 0 0 0px transparent; }
+}
+
+/* Flash de movimiento */
+@keyframes move-flash {
+    0%   { background: rgba(0,212,255,.6); box-shadow: inset 0 0 10px rgba(0,212,255,.8); }
+    100% { background: rgba(0,212,255,.25); }
+}
+
+/* Onda de impacto (ring expand) */
+@keyframes ring-expand {
+    0%   { transform: scale(.4); opacity: .9; }
+    100% { transform: scale(2.2); opacity: 0; }
+}
+
+/* Pulso de tag warning */
+@keyframes tag-pulse-warning {
+    0%, 100% { box-shadow: 0 0 0 rgba(255,165,0,0); }
+    50%       { box-shadow: 0 0 8px rgba(255,165,0,.4); }
+}
+
+/* Pulso de tag success */
+@keyframes tag-pulse-success {
+    0%, 100% { box-shadow: 0 0 0 rgba(0,255,136,0); }
+    50%       { box-shadow: 0 0 8px rgba(0,255,136,.35); }
+}
+
+/* Entrada de log (tipo teletype) */
+@keyframes logSlide {
+    from { opacity: 0; transform: translateX(-8px); max-height: 0; }
+    to   { opacity: 1; transform: translateX(0);   max-height: 2rem; }
+}
+
+/* Shudder (vibración rápida al recibir daño) */
+@keyframes shudder {
+    0%, 100% { transform: translate(0); }
+    20% { transform: translate(-3px, 1px); }
+    40% { transform: translate(3px, -1px); }
+    60% { transform: translate(-2px, 2px); }
+    80% { transform: translate(2px, -1px); }
+}
+
+/* Destelleo de borde de panel al recibir impacto */
+@keyframes border-hit {
+    0%   { border-color: var(--danger); box-shadow: 0 0 20px rgba(255,60,60,.6); }
+    60%  { border-color: rgba(255,60,60,.4); }
+    100% { border-color: var(--border); box-shadow: none; }
+}
+
+/* Reveal de celdas del tablero en cascada */
+@keyframes cellReveal {
+    from { opacity: 0; transform: scale(.6); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+/* ---- Clases de animación ---- */
+.animate-in        { animation: fadeIn .35s ease both; }
+.animate-slide-down { animation: slideDown .3s ease both; }
+.animate-scale-in  { animation: scaleIn .3s cubic-bezier(.34,1.56,.64,1) both; }
+.animate-shudder   { animation: shudder .3s ease both; }
+.animate-border-hit { animation: border-hit .6s ease both; }

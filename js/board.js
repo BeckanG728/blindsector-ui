@@ -9,40 +9,32 @@
  *   'attack' — el jugador selecciona la celda de ataque
  */
 
+import { spawnParticles, boardScanReveal, pulseElement } from './vfx.js';
+
 const COLS = 15;
 const ROWS = 15;
 
-// Regiones en el tablero (col/row 0..14 → 9 regiones de 5×5, 3 cols × 3 filas)
-// Etiqueta: letra de columna de región (A, B, C) + número de fila de región (1, 2, 3)
-// Alineado con backend: Region.toLabel() → 'A' + regionCol, regionRow + 1
 function getRegion(col, row) {
-    const colSector = Math.floor(col / 5); // 0..2
-    const rowSector = Math.floor(row / 5); // 0..2
+    const colSector = Math.floor(col / 5);
+    const rowSector = Math.floor(row / 5);
     return `${String.fromCharCode(65 + colSector)}${rowSector + 1}`;
 }
 
 export class Board {
-    /**
-     * @param {string} containerId  — id del elemento #board
-     * @param {function} onCellClick — callback(col, row, phase)
-     */
     constructor(containerId, onCellClick) {
-        this.container = document.getElementById(containerId);
+        this.container   = document.getElementById(containerId);
         this.onCellClick = onCellClick;
-        this.phase = 'move'; // 'move' | 'attack'
+        this.phase       = 'move';
 
-        // Estado visual
-        this.myCol    = null;
-        this.myRow    = null;
-        this.moveCol  = null;
-        this.moveRow  = null;
+        this.myCol     = null;
+        this.myRow     = null;
+        this.moveCol   = null;
+        this.moveRow   = null;
         this.attackCol = null;
         this.attackRow = null;
-        this.enemyRegion  = null;
-        this.myAttackArea = [];
-        this.impactReceived = [];
 
-        this._cells = [];
+        this._cells         = [];
+        this._prevSnapshot  = null;
         this._build();
     }
 
@@ -58,14 +50,21 @@ export class Board {
                 cell.dataset.row = row;
                 cell.title = `${getRegion(col, row)} (${col},${row})`;
 
-                cell.addEventListener('click', () => {
-                    this.onCellClick(col, row, this.phase);
+                cell.addEventListener('click', (e) => {
+                    this._onCellClickVfx(cell, col, row, e);
+                });
+
+                cell.addEventListener('mouseenter', () => {
+                    this._onCellHoverVfx(cell);
                 });
 
                 this.container.appendChild(cell);
                 this._cells.push(cell);
             }
         }
+
+        // Reveal inicial en barrido diagonal
+        boardScanReveal(this._cells, COLS);
     }
 
     _cellAt(col, row) {
@@ -74,12 +73,64 @@ export class Board {
 
     setPhase(phase) {
         this.phase = phase;
+        // Cambiar clase del tablero según fase
+        if (phase === 'attack') {
+            this.container.classList.add('attack-phase');
+        } else {
+            this.container.classList.remove('attack-phase');
+        }
+    }
+
+    // ---- Efectos en hover ----
+    _onCellHoverVfx(cell) {
+        // Chispa sutil al pasar por celdas de ataque o seleccionadas
+        if (cell.classList.contains('selected-move') ||
+            cell.classList.contains('selected-attack') ||
+            cell.classList.contains('player-me')) {
+            // Mini partícula accent única
+            const rect = cell.getBoundingClientRect();
+            const p = document.createElement('div');
+            const size = 2 + Math.random() * 2;
+            Object.assign(p.style, {
+                position:    'fixed',
+                left:        `${rect.left + Math.random() * rect.width}px`,
+                top:         `${rect.top  + Math.random() * rect.height}px`,
+                width:       `${size}px`,
+                height:      `${size}px`,
+                borderRadius: '50%',
+                background:  'var(--accent)',
+                pointerEvents: 'none',
+                zIndex:      '9996',
+                opacity:     '1',
+                transition:  'transform .4s ease-out, opacity .4s ease-out',
+            });
+            document.body.appendChild(p);
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    p.style.transform = `translateY(-${8 + Math.random() * 12}px)`;
+                    p.style.opacity   = '0';
+                });
+            });
+            setTimeout(() => p.remove(), 450);
+        }
+    }
+
+    // ---- Click con VFX ----
+    _onCellClickVfx(cell, col, row, e) {
+        if (this.phase === 'move') {
+            spawnParticles(cell, 'move');
+        } else {
+            spawnParticles(cell, 'attack');
+        }
+        this.onCellClick(col, row, this.phase);
     }
 
     /**
      * Actualiza todo el tablero a partir del snapshot + selecciones actuales.
      */
     render(snapshot) {
+        const prev = this._prevSnapshot;
+
         // Limpiar clases dinámicas
         for (const cell of this._cells) {
             cell.className = 'cell';
@@ -105,11 +156,19 @@ export class Board {
             this._markRegion(snapshot.enemyRegion, 'enemy-region');
         }
 
-        // Área de impacto recibida
+        // Área de impacto recibida — con partículas si es nuevo turno
         if (snapshot.impactAreaReceived) {
+            const isNew = !prev || prev.turn !== snapshot.turn;
             for (const pos of snapshot.impactAreaReceived) {
                 const c = this._cellAt(pos.col, pos.row);
-                if (c) c.classList.add('impact-received');
+                if (c) {
+                    c.classList.add('impact-received');
+                    if (isNew) {
+                        // Escalonar partículas por celda
+                        const delay = Math.random() * 120;
+                        setTimeout(() => spawnParticles(c, 'hit'), delay);
+                    }
+                }
             }
         }
 
@@ -136,16 +195,14 @@ export class Board {
             const c = this._cellAt(this.attackCol, this.attackRow);
             if (c) c.classList.add('selected-attack');
         }
+
+        this._prevSnapshot = snapshot;
     }
 
-    /**
-     * Marca todas las celdas que pertenecen a la región indicada.
-     * Formato de región: letra fila (A-E) + número columna (1-5), ej: "B3"
-     */
     _markRegion(region, cssClass) {
         if (!region || region.length < 2) return;
-        const colSector = region.charCodeAt(0) - 65; // 'A'=0, 'B'=1, 'C'=2
-        const rowSector = parseInt(region[1]) - 1;   // '1'=0, '2'=1, '3'=2
+        const colSector = region.charCodeAt(0) - 65;
+        const rowSector = parseInt(region[1]) - 1;
         if (colSector < 0 || colSector > 2 || rowSector < 0 || rowSector > 2) return;
 
         const colStart = colSector * 5;
@@ -159,18 +216,12 @@ export class Board {
         }
     }
 
-    /**
-     * Establece la selección de movimiento y re-renderiza.
-     */
     selectMove(col, row, snapshot) {
         this.moveCol = col;
         this.moveRow = row;
         this.render(snapshot);
     }
 
-    /**
-     * Establece la selección de ataque y re-renderiza.
-     */
     selectAttack(col, row, snapshot) {
         this.attackCol = col;
         this.attackRow = row;
@@ -178,8 +229,8 @@ export class Board {
     }
 
     clearSelections() {
-        this.moveCol = null;
-        this.moveRow = null;
+        this.moveCol   = null;
+        this.moveRow   = null;
         this.attackCol = null;
         this.attackRow = null;
     }
