@@ -94,7 +94,8 @@ body::before {
     padding: 10px 8px;
     background: var(--panel);
     border-right: 1px solid var(--border);
-    overflow-y: auto;
+    overflow: hidden;
+    min-height: 0;
     animation: slideInLeft .4s ease both
 }
 
@@ -135,9 +136,9 @@ body::before {
 .app-version {
     font-family: var(--font-mono);
     font-size: .6rem;
-    color: var(--muted);
+    color: #fff;
     letter-spacing: .12em;
-    opacity: .5;
+    opacity: .90;
     align-self: center;
 }
 
@@ -191,7 +192,10 @@ body::before {
     padding: 10px 12px;
     position: relative;
     overflow: hidden;
-    transition: border-color .3s
+    transition: border-color .3s;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
 }
 
 .card::before {
@@ -294,8 +298,9 @@ body::before {
 }
 
 .turn-log {
-    max-height: 110px;
+    flex: 1;
     overflow-y: auto;
+    min-height: 0;
     scrollbar-width: thin;
     scrollbar-color: var(--border) transparent
 }
